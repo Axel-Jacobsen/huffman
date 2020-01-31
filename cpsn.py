@@ -63,6 +63,7 @@ def encode(f):
 
     print('Writing byte file')
     total_bits = ''
+    print(wt)
     for char in f:
         total_bits += wt[char]
     
@@ -76,12 +77,11 @@ def encode(f):
     return T
 
 def hex_to_bin(byte):
-    s = ''
+    # return '{0:b}'.format(ord(byte))
     for i in range(8):
-        s += str((int.from_bytes(byte, 'big') >> i) & 1)
-    return s[::-1]
+        yield str((int.from_bytes(byte, 'big') >> (7 - i)) & 1)
 
-def traverse(bs, N):
+def decode(bs, N):
     cn = N
     s = ''
     byte = bs.read(1)
@@ -90,11 +90,7 @@ def traverse(bs, N):
             try:
                 if b == '0':
                     cn = cn.l
-            except AttributeError:
-                s += cn
-                cn = N
-            try:
-                if b == '1':
+                elif b == '1':
                     cn = cn.r
             except AttributeError:
                 s += cn
@@ -108,8 +104,9 @@ if __name__ == '__main__':
     enw = open("murderoftheuniverse.txt", "r").read()
     T = encode(enw)
     encoded_f = open('out', 'rb')
-    reconstructed = traverse(encoded_f, T)
+    reconstructed = decode(encoded_f, T)
     encoded_f.close()
+
     print('\nReconstructed')
     print(reconstructed)
 
