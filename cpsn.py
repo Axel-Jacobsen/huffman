@@ -91,14 +91,14 @@ def gen_write_table(huffman_tree, write_table, b=''):
 def encode(f):
     print('Getting Char Frequency')
     char_freqs = create_char_freqs(f)
+
     print('Generating Huffman tree')
     T = gen_huffman(char_freqs)
     wt = {}
+
     print('Generating Writing Table')
     gen_write_table(T, wt)
-    print(f'Number of chars: {len(wt)}')
-    
-    print(wt)
+
     print('Writing byte file')
     total_bits = ''
     for char in f:
@@ -123,23 +123,20 @@ def decode(bs, N):
     byte = bs.read(1)
     while byte:
         for b in hex_to_bin(byte):
-            try:
-                if b == '0':
-                    cn = cn.l
-                elif b == '1':
-                    cn = cn.r
-            except AttributeError:
+            if b == '0':
+                cn = cn.l
+            elif b == '1':
+                cn = cn.r
+            if isinstance(cn, str):
                 s += cn
                 cn = N
-
         byte = bs.read(1)
-    return s
+    return s[:-1]
 
 
 if __name__ == '__main__':
     enw = open("murderoftheuniverse.txt", "r").read()
     T = encode(enw)
-    T.print_leaves()
     encoded_f = open('out', 'rb')
     reconstructed = decode(encoded_f, T)
     encoded_f.close()
