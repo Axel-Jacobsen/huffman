@@ -9,20 +9,54 @@ from collections import defaultdict
 
 class Node(object):
 
-    def __init__(self, l=None, r=None):
+    def __init__(self, l=None, r=None, name='node'):
         self.l = l
         self.r = r
+        self.name = name
+
+    def __repr__(self):
+        return self.name
+
+    def _get_branches(self, obj, seen):
+        still_branches = True
+        ret = []
+        try:
+            ret.append(obj.l)
+            seen.add(obj.l)
+        except AttributeError:
+            still_branches = False
+            if obj not in seen:
+                ret.append(obj)
+
+        try:
+            ret.append(obj.r)
+            seen.add(obj.r)
+        except AttributeError:
+            still_branches = False
+            if obj not in seen:
+                ret.append(obj)
+        
+        return ret, still_branches
 
     def print_leaves(self):
-        try:
-            print(self.l.print_leaves())
-        except AttributeError:
-            print(self.l)
-        try:
-            print(self.r.print_leaves())
-        except AttributeError:
-            print(self.r)
-
+        level = 0
+        branches = [self]
+        mas = True
+        seen = set()
+        branches_list = []
+        while mas:
+            novice = []
+            mas = False
+            for branch in branches:
+                lbs, still_branches = self._get_branches(branch, seen)
+                if len(lbs) != 0:
+                    novice.extend(lbs)
+                mas |= still_branches
+            level += 1
+            branches = novice
+            branches_list.append(branches)
+        for b in branches_list:
+            print(b)
 
 def create_char_freqs(bts):
     D = defaultdict(int)
@@ -31,11 +65,14 @@ def create_char_freqs(bts):
     return sorted(D.items(), key=lambda v: v[1], reverse=True)
 
 def gen_huffman(char_freqs):
+    i = 0
     while len(char_freqs) > 1:
         last_2 = char_freqs[-2:]
         del char_freqs[-2:]
 
-        branch = Node(last_2[0][0], last_2[1][0])
+        i += 1
+        nm = '_' + str(i)
+        branch = Node(last_2[0][0], last_2[1][0], nm)
         freq_sum = last_2[0][1] + last_2[1][1] 
         char_freqs.append((branch, freq_sum))
         char_freqs.sort(key=lambda v: v[1], reverse=True)
@@ -60,13 +97,13 @@ def encode(f):
     print('Generating Writing Table')
     gen_write_table(T, wt)
     print(f'Number of chars: {len(wt)}')
-
+    
+    print(wt)
     print('Writing byte file')
     total_bits = ''
-    print(wt)
     for char in f:
         total_bits += wt[char]
-    
+
     # pad the last digits to make bytes out of bits
     l = len(total_bits)
     total_bits += '0' * (8 * (l // 8 + 1) - l)
@@ -77,7 +114,6 @@ def encode(f):
     return T
 
 def hex_to_bin(byte):
-    # return '{0:b}'.format(ord(byte))
     for i in range(8):
         yield str((int.from_bytes(byte, 'big') >> (7 - i)) & 1)
 
@@ -103,6 +139,7 @@ def decode(bs, N):
 if __name__ == '__main__':
     enw = open("murderoftheuniverse.txt", "r").read()
     T = encode(enw)
+    T.print_leaves()
     encoded_f = open('out', 'rb')
     reconstructed = decode(encoded_f, T)
     encoded_f.close()
