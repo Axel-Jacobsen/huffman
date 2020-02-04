@@ -9,54 +9,13 @@ from collections import defaultdict
 
 class Node(object):
 
-    def __init__(self, l=None, r=None, name='node'):
+    def __init__(self, l=None, r=None):
         self.l = l
         self.r = r
-        self.name = name
 
     def __repr__(self):
         return self.name
 
-    def _get_branches(self, obj, seen):
-        still_branches = True
-        ret = []
-        try:
-            ret.append(obj.l)
-            seen.add(obj.l)
-        except AttributeError:
-            still_branches = False
-            if obj not in seen:
-                ret.append(obj)
-
-        try:
-            ret.append(obj.r)
-            seen.add(obj.r)
-        except AttributeError:
-            still_branches = False
-            if obj not in seen:
-                ret.append(obj)
-        
-        return ret, still_branches
-
-    def print_leaves(self):
-        level = 0
-        branches = [self]
-        mas = True
-        seen = set()
-        branches_list = []
-        while mas:
-            novice = []
-            mas = False
-            for branch in branches:
-                lbs, still_branches = self._get_branches(branch, seen)
-                if len(lbs) != 0:
-                    novice.extend(lbs)
-                mas |= still_branches
-            level += 1
-            branches = novice
-            branches_list.append(branches)
-        for b in branches_list:
-            print(b)
 
 def create_char_freqs(bts):
     D = defaultdict(int)
@@ -71,8 +30,7 @@ def gen_huffman(char_freqs):
         del char_freqs[-2:]
 
         i += 1
-        nm = '_' + str(i)
-        branch = Node(last_2[0][0], last_2[1][0], nm)
+        branch = Node(last_2[0][0], last_2[1][0])
         freq_sum = last_2[0][1] + last_2[1][1] 
         char_freqs.append((branch, freq_sum))
         char_freqs.sort(key=lambda v: v[1], reverse=True)
@@ -135,7 +93,7 @@ def decode(bs, N):
 
 
 if __name__ == '__main__':
-    enw = open("murderoftheuniverse.txt", "r").read()
+    enw = open('murderoftheuniverse.txt', 'r').read()
     T = encode(enw)
     encoded_f = open('out', 'rb')
     reconstructed = decode(encoded_f, T)
