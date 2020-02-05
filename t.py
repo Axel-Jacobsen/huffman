@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
 
 import numpy as np
-import cpsn
 
 
 class WriteTest(object):
@@ -25,9 +24,9 @@ class WriteTest(object):
         s = ''
         for i in range(np.random.randint(0, high=i)):
             s += np.random.randint(0, high=j) * '0' \
-               + np.random.randint(0, high=j) * '1' \
-               + np.random.randint(0, high=j) * '01' \
-               + np.random.randint(0, high=j) * '10'
+                + np.random.randint(0, high=j) * '1' \
+                + np.random.randint(0, high=j) * '01' \
+                + np.random.randint(0, high=j) * '10'
         s += '0' * (8 * (len(s) // 8 + 1) - len(s))
         return s
 
@@ -44,8 +43,5 @@ class WriteTest(object):
         print('s == rs asserted')
 
 
-
-
 if __name__ == '__main__':
     WriteTest.test()
-
