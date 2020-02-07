@@ -3,20 +3,22 @@
 from collections import defaultdict
 
 
+class Node(object):
+
+    def __init__(self, l_child=None, r_child=None):
+        self.l_child = l_child
+        self.r_child = r_child
+        self.name = 'node'
+
+    def __repr__(self):
+        return self.name
+
+
 class HuffmanCoding(object):
 
-    def __init__(self, filename):
-        self.filename = filename
+    def __init__(self):
         self.huff_tree = None
-
-    class Node(object):
-
-        def __init__(self, l_child=None, r_child=None):
-            self.l_child = l_child
-            self.r_child = r_child
-
-        def __repr__(self):
-            return self.name
+        self.write_table = {}
 
     def _create_char_freqs(bts):
         D = defaultdict(int)
@@ -25,63 +27,70 @@ class HuffmanCoding(object):
         return sorted(D.items(), key=lambda v: v[1], reverse=True)
 
     def _gen_huffman(char_freqs):
-        i = 0
         while len(char_freqs) > 1:
             last_2 = char_freqs[-2:]
             del char_freqs[-2:]
-
-            i += 1
-            branch = HuffmanCoding.Node(last_2[0][0], last_2[1][0])
+            branch = Node(last_2[0][0], last_2[1][0])
             freq_sum = last_2[0][1] + last_2[1][1]
             char_freqs.append((branch, freq_sum))
             char_freqs.sort(key=lambda v: v[1], reverse=True)
         return char_freqs[0][0]
 
-    def _gen_write_table(huffman_tree, write_table, b=''):
+    def _gen_write_table(self, node, b=''):
         try:
-            HuffmanCoding._gen_write_table(
-                huffman_tree.l_child, write_table, b + '0')
+            self._gen_write_table(node.l_child, b + '0')
         except AttributeError:
-            write_table[huffman_tree.l] = b + '0'
+            self.write_table[node.l_child] = b + '0'
         try:
-            HuffmanCoding._gen_write_table(
-                huffman_tree.r_child, write_table, b + '1')
+            self._gen_write_table(node.r_child, b + '1')
         except AttributeError:
-            write_table[huffman_tree.r] = b + '1'
+            self.write_table[node.r_child] = b + '1'
 
     def _hex_to_bin(byte):
         for i in range(8):
             yield str((int.from_bytes(byte, 'big') >> (7 - i)) & 1)
 
-    def write_tree_file(self):
-        if self.huff_tree is None:
-            raise RuntimeError(
-                'There is no tree file associated with this HuffmanTree object - must encode a file'
-            )
-        
+    def write(self, node, file_h, node_num=0):
+        if isinstance(node.l_child, Node):
+            lnode = node_num + 1
+            self.write(node.l_child, file_h, lnode)
+        else:
+            lnode = node.l_child
 
-    def build_tree_from_file(self, filename):
-        pass
+        if isinstance(node.r_child, Node):
+            rnode = node_num + 2
+            self.write(node.r_child, file_h, rnode)
+        else:
+            rnode = node.r_child
+
+        file_h.write(f'{node_num}|{lnode}|{rnode} ')
+
+    # def build_tree_from_file(self, filename):
+    #     if self.huff_tree is None:
+    #         raise RuntimeError(
+    #             'There is no tree file associated with this HuffmanTree object - must encode a file'
+    #         )
 
     def encode(self, f):
         print('Getting Char Frequency')
         char_freqs = HuffmanCoding._create_char_freqs(f)
 
-        print('Generating Huffman tree')
-        T = HuffmanCoding.gen_huffman(char_freqs)
-        wt = {}
+        print('Generating Huffman Tree')
+        T = HuffmanCoding._gen_huffman(char_freqs)
 
         print('Generating Writing Table')
-        HuffmanCoding._gen_write_table(T, wt)
+
+        self._gen_write_table(T)
+        print(self.write_table)
 
         print('Writing byte file')
         total_bits = ''
         for char in f:
-            total_bits += wt[char]
+            total_bits += self.write_table[char]
 
         # pad the last digits to make bytes out of bits
         len_bits = len(total_bits)
-        total_bits += '0' * (8 * (len_bits // 8 + 1) - l)
+        total_bits += '0' * (8 * (len_bits // 8 + 1) - len_bits)
 
         with open('out', 'wb') as g:
             bb = int(total_bits, 2).to_bytes(len(total_bits) // 8, 'big')
@@ -91,14 +100,7 @@ class HuffmanCoding(object):
         return T
 
     def decode(self, encoded_file, tree_file=None):
-        if tree_file is None:
-            if self.huff_tree is None:
-                raise RuntimeError(
-                    'Huffman Tree has not been created - must supply the tree file')
-            cn = self.huff_tree
-        else:
-            cn = HuffmanCoding.build_tree_from_file(tree_file)
-
+        cn = mn = self.huff_tree
         s = ''
         byte = encoded_file.read(1)
         while byte:
@@ -109,7 +111,7 @@ class HuffmanCoding(object):
                     cn = cn.r_child
                 if isinstance(cn, str):
                     s += cn
-                    cn = N
+                    cn = mn
             byte = encoded_file.read(1)
         return s[:-1]
 
@@ -118,9 +120,13 @@ if __name__ == '__main__':
     enw = open('murderoftheuniverse.txt', 'r').read()
     hc = HuffmanCoding()
     T = hc.encode(enw)
+    with open('treefile', 'w') as f:
+        hc.write(T, f)
+
     encoded_f = open('out', 'rb')
     reconstructed = hc.decode(encoded_f, T)
     encoded_f.close()
 
     print('\nReconstructed')
     print(reconstructed)
+
