@@ -2,16 +2,7 @@
 
 from collections import defaultdict
 
-
-class Node(object):
-
-    def __init__(self, l_child=None, r_child=None):
-        self.l_child = l_child
-        self.r_child = r_child
-        self.name = 'node'
-
-    def __repr__(self):
-        return self.name
+from node import Node
 
 
 class HuffmanCoding(object):
@@ -50,58 +41,39 @@ class HuffmanCoding(object):
         for i in range(8):
             yield str((int.from_bytes(byte, 'big') >> (7 - i)) & 1)
 
-    def write(self, node, file_h, node_num=0):
-        if isinstance(node.l_child, Node):
-            lnode = node_num + 1
-            self.write(node.l_child, file_h, lnode)
-        else:
-            lnode = node.l_child
-
-        if isinstance(node.r_child, Node):
-            rnode = node_num + 2
-            self.write(node.r_child, file_h, rnode)
-        else:
-            rnode = node.r_child
-
-        file_h.write(f'{node_num}|{lnode}|{rnode} ')
-
-    # def build_tree_from_file(self, filename):
-    #     if self.huff_tree is None:
-    #         raise RuntimeError(
-    #             'There is no tree file associated with this HuffmanTree object - must encode a file'
-    #         )
-
-    def encode(self, f):
+    def encode(self, fname):
         print('Getting Char Frequency')
-        char_freqs = HuffmanCoding._create_char_freqs(f)
+        with open(fname, 'r') as read_file:
+            f = read_file.read()
+            char_freqs = HuffmanCoding._create_char_freqs(f)
 
         print('Generating Huffman Tree')
         T = HuffmanCoding._gen_huffman(char_freqs)
 
         print('Generating Writing Table')
-
         self._gen_write_table(T)
-        print(self.write_table)
 
         print('Writing byte file')
         total_bits = ''
         for char in f:
             total_bits += self.write_table[char]
 
-        # pad the last digits to make bytes out of bits
+        # pad the last digits to make bytes out of the leftover bits
         len_bits = len(total_bits)
         total_bits += '0' * (8 * (len_bits // 8 + 1) - len_bits)
 
-        with open('out', 'wb') as g:
+        # format compressed file name
+        with open(fname + '.pine', 'wb') as g:
             bb = int(total_bits, 2).to_bytes(len(total_bits) // 8, 'big')
             g.write(bb)
 
         self.huff_tree = T
         return T
 
-    def decode(self, encoded_file, tree_file=None):
+    def decode(self, encoded_fname, tree_file=None):
         cn = mn = self.huff_tree
         s = ''
+        encoded_file = open(encoded_fname)
         byte = encoded_file.read(1)
         while byte:
             for b in HuffmanCoding._hex_to_bin(byte):
@@ -117,11 +89,16 @@ class HuffmanCoding(object):
 
 
 if __name__ == '__main__':
-    enw = open('murderoftheuniverse.txt', 'r').read()
     hc = HuffmanCoding()
-    T = hc.encode(enw)
-    with open('treefile', 'w') as f:
+    T = hc.encode('murderoftheuniverse.txt')
+
+    print(hc.write_table)
+
+    with open('treefile', 'wb') as f:
         hc.write(T, f)
+
+    with open('treefile', 'rb') as g:
+        hc.build_tree_from_file(g)
 
     encoded_f = open('out', 'rb')
     reconstructed = hc.decode(encoded_f, T)
@@ -129,4 +106,3 @@ if __name__ == '__main__':
 
     print('\nReconstructed')
     print(reconstructed)
-
