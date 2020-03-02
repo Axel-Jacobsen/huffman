@@ -97,9 +97,10 @@ class HuffmanCoding(object):
 
 if __name__ == '__main__':
     hc = HuffmanCoding()
-    T = hc.encode('murderoftheuniverse.txt')
-    reconstructed = hc.decode('murderoftheuniverse.txt.pine')
-    original = open('murderoftheuniverse.txt', 'r').read()
+    T = hc.encode('enwik8')
+    print('Uncompress file')
+    reconstructed = hc.decode('enwik8.pine')
+    original = open('enwik8', 'r').read()
     assert reconstructed == original
     print('Reconstructed:')
     print(reconstructed)
