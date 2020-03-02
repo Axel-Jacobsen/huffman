@@ -10,4 +10,4 @@ Compressed File Size:   out: 1.8K
 Compression Ratio: (uncompresed size) / (compressed size) = 1.39
 ```
 
-i.e. compressed file is 56% of the size of the uncompressed file. The compression ratio would depend on the number of unique characters in the uncompressed file; the fewer characters, the higher the compression ratio.
+i.e. compressed file is 72 % of the size of the uncompressed file. The compression ratio would depend on the number of unique characters in the uncompressed file; the fewer characters, the higher the compression ratio.
