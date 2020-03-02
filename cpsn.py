@@ -1,104 +1,105 @@
 #! /usr/bin/env python3
 
-# 36548940  gzipped enwik8
-# 100000000         enwik8
-
-import struct
 from collections import defaultdict
+import pine
+from node import Node
 
 
-class Node(object):
+class HuffmanCoding(object):
 
-    def __init__(self, l=None, r=None):
-        self.l = l
-        self.r = r
+    def __init__(self):
+        self.write_table = {}
 
-    def __repr__(self):
-        return self.name
+    def _create_char_freqs(bts):
+        D = defaultdict(int)
+        for byte in bts:
+            D[byte] += 1
+        return sorted(D.items(), key=lambda v: v[1], reverse=True)
 
+    def _gen_huffman_tree(char_freqs):
+        """
+        Create the Huffman Tree which will be used for compression
+        """
+        while len(char_freqs) > 1:
+            last_2 = char_freqs[-2:]
+            del char_freqs[-2:]
+            branch = Node(last_2[0][0], last_2[1][0])
+            freq_sum = last_2[0][1] + last_2[1][1]
+            char_freqs.append((branch, freq_sum))
+            char_freqs.sort(key=lambda v: v[1], reverse=True)
+        return char_freqs[0][0]
 
-def create_char_freqs(bts):
-    D = defaultdict(int)
-    for byte in bts:
-        D[byte] += 1
-    return sorted(D.items(), key=lambda v: v[1], reverse=True)
+    def gen_write_table(self, node, b=''):
+        """
+        Generate write table (which maps the character to its code
+        in the Huffman Tree)
+        """
+        try:
+            self.gen_write_table(node.l_child, b + '0')
+        except AttributeError:
+            self.write_table[node.l_child] = b + '0'
+        try:
+            self.gen_write_table(node.r_child, b + '1')
+        except AttributeError:
+            self.write_table[node.r_child] = b + '1'
 
-def gen_huffman(char_freqs):
-    i = 0
-    while len(char_freqs) > 1:
-        last_2 = char_freqs[-2:]
-        del char_freqs[-2:]
+    def _byte_to_bits(byte, discard=0):
+        """
+        yield bit by bit from byte, ignoring the first `discard` bits
+        `discard` is used to ignore the zero padding before the encoded file
+        """
+        for i in range(discard, 8):
+            yield str((byte >> (7 - i)) & 1)
 
-        i += 1
-        branch = Node(last_2[0][0], last_2[1][0])
-        freq_sum = last_2[0][1] + last_2[1][1] 
-        char_freqs.append((branch, freq_sum))
-        char_freqs.sort(key=lambda v: v[1], reverse=True)
-    return char_freqs[0][0]
+    def encode(self, fname):
+        print('Getting Char Frequency')
+        with open(fname, 'r') as read_file:
+            f = read_file.read()
+            char_freqs = HuffmanCoding._create_char_freqs(f)
 
-def gen_write_table(huffman_tree, write_table, b=''):
-    try:
-        gen_write_table(huffman_tree.l, write_table, b + '0')
-    except AttributeError:
-        write_table[huffman_tree.l] = b + '0'
-    try:
-        gen_write_table(huffman_tree.r, write_table, b + '1')
-    except AttributeError:
-        write_table[huffman_tree.r] = b + '1'
+        print('Generating Huffman Tree')
+        T = HuffmanCoding._gen_huffman_tree(char_freqs)
 
-def encode(f):
-    print('Getting Char Frequency')
-    char_freqs = create_char_freqs(f)
+        print('Generating Writing Table')
+        self.gen_write_table(T)
 
-    print('Generating Huffman tree')
-    T = gen_huffman(char_freqs)
-    wt = {}
+        print('Writing byte file')
+        encoded_file = ''
+        for char in f:
+            encoded_file += self.write_table[char]
 
-    print('Generating Writing Table')
-    gen_write_table(T, wt)
+        contents = pine.create_file_contents(self.write_table, encoded_file)
 
-    print('Writing byte file')
-    total_bits = ''
-    for char in f:
-        total_bits += wt[char]
+        with open(fname + '.pine', 'wb') as g:
+            g.write(contents)
 
-    # pad the last digits to make bytes out of bits
-    l = len(total_bits)
-    total_bits += '0' * (8 * (l // 8 + 1) - l)
+        return T
 
-    with open('out', 'wb') as g:
-        bb = int(total_bits, 2).to_bytes(len(total_bits) // 8, 'big')
-        g.write(bb)
-    return T
-
-def hex_to_bin(byte):
-    for i in range(8):
-        yield str((int.from_bytes(byte, 'big') >> (7 - i)) & 1)
-
-def decode(bs, N):
-    cn = N
-    s = ''
-    byte = bs.read(1)
-    while byte:
-        for b in hex_to_bin(byte):
-            if b == '0':
-                cn = cn.l
-            elif b == '1':
-                cn = cn.r
-            if isinstance(cn, str):
-                s += cn
-                cn = N
-        byte = bs.read(1)
-    return s[:-1]
+    def decode(self, encoded_fname: str) -> str:
+        """
+        Decode the .pine file given by its filename
+        """
+        # Pull the bytes from the file
+        s = ''
+        write_table_bytes, encoded_file, padding = pine.get_file_chunks(encoded_fname)
+        cn = mn = pine.tree_from_bytes(write_table_bytes)
+        for byte in encoded_file:
+            for b in HuffmanCoding._byte_to_bits(byte, padding):
+                if b == '0':
+                    cn = cn.l_child
+                elif b == '1':
+                    cn = cn.r_child
+                if isinstance(cn, str):
+                    s += cn
+                    cn = mn
+            padding = 0
+        return s
 
 
 if __name__ == '__main__':
-    enw = open('murderoftheuniverse.txt', 'r').read()
-    T = encode(enw)
-    encoded_f = open('out', 'rb')
-    reconstructed = decode(encoded_f, T)
-    encoded_f.close()
+    hc = HuffmanCoding()
+    T = hc.encode('murderoftheuniverse.txt')
+    reconstructed = hc.decode('murderoftheuniverse.txt.pine')
 
     print('\nReconstructed')
     print(reconstructed)
-
