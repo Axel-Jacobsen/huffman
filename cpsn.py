@@ -79,7 +79,6 @@ class HuffmanCoding(object):
         """
         Decode the .pine file given by its filename
         """
-        # Pull the bytes from the file
         s = ''
         write_table_bytes, encoded_file, padding = pine.get_file_chunks(encoded_fname)
         cn = mn = pine.tree_from_bytes(write_table_bytes)
@@ -100,6 +99,7 @@ if __name__ == '__main__':
     hc = HuffmanCoding()
     T = hc.encode('murderoftheuniverse.txt')
     reconstructed = hc.decode('murderoftheuniverse.txt.pine')
-
-    print('\nReconstructed')
+    original = open('murderoftheuniverse.txt', 'r').read()
+    assert reconstructed == original
+    print('Reconstructed:')
     print(reconstructed)
