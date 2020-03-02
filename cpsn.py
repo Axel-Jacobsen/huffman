@@ -64,11 +64,11 @@ class HuffmanCoding(object):
         self.gen_write_table(T)
 
         print('Writing byte file')
-        encoded_file = ''
+        encoded_data = ''
         for char in f:
-            encoded_file += self.write_table[char]
+            encoded_data += self.write_table[char]
 
-        contents = pine.create_file_contents(self.write_table, encoded_file)
+        contents = pine.create_file_contents(self.write_table, encoded_data)
 
         with open(fname + '.pine', 'wb') as g:
             g.write(contents)
@@ -80,9 +80,9 @@ class HuffmanCoding(object):
         Decode the .pine file given by its filename
         """
         s = ''
-        write_table_bytes, encoded_file, padding = pine.get_file_chunks(encoded_fname)
+        write_table_bytes, encoded_data, padding = pine.get_file_chunks(encoded_fname)
         cn = mn = pine.tree_from_bytes(write_table_bytes)
-        for byte in encoded_file:
+        for byte in encoded_data:
             for b in HuffmanCoding._byte_to_bits(byte, padding):
                 if b == '0':
                     cn = cn.l_child
