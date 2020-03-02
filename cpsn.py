@@ -7,10 +7,7 @@ from node import Node
 
 class HuffmanCoding(object):
 
-    TREE_MAGNITUDE = 4
-
     def __init__(self):
-        self.huff_tree = None
         self.write_table = {}
 
     def _create_char_freqs(bts):
@@ -19,7 +16,10 @@ class HuffmanCoding(object):
             D[byte] += 1
         return sorted(D.items(), key=lambda v: v[1], reverse=True)
 
-    def _gen_huffman(char_freqs):
+    def _gen_huffman_tree(char_freqs):
+        """
+        Create the Huffman Tree which will be used for compression
+        """
         while len(char_freqs) > 1:
             last_2 = char_freqs[-2:]
             del char_freqs[-2:]
@@ -30,6 +30,10 @@ class HuffmanCoding(object):
         return char_freqs[0][0]
 
     def gen_write_table(self, node, b=''):
+        """
+        Generate write table (which maps the character to its code
+        in the Huffman Tree)
+        """
         try:
             self.gen_write_table(node.l_child, b + '0')
         except AttributeError:
@@ -41,7 +45,8 @@ class HuffmanCoding(object):
 
     def _byte_to_bits(byte, discard=0):
         """
-        yield bit by bit from byte
+        yield bit by bit from byte, ignoring the first `discard` bits
+        `discard` is used to ignore the zero padding before the encoded file
         """
         for i in range(discard, 8):
             yield str((byte >> (7 - i)) & 1)
@@ -53,34 +58,31 @@ class HuffmanCoding(object):
             char_freqs = HuffmanCoding._create_char_freqs(f)
 
         print('Generating Huffman Tree')
-        T = HuffmanCoding._gen_huffman(char_freqs)
+        T = HuffmanCoding._gen_huffman_tree(char_freqs)
 
         print('Generating Writing Table')
         self.gen_write_table(T)
 
         print('Writing byte file')
-        total_bits = ''
+        encoded_file = ''
         for char in f:
-            total_bits += self.write_table[char]
+            encoded_file += self.write_table[char]
 
-        pine_bytes = pine.tree_as_bytes(self.write_table)
-        len_pine_b = len(pine_bytes).to_bytes(HuffmanCoding.TREE_MAGNITUDE, 'big')
-        padding    = HuffmanCoding.get_tail_padding(total_bits)
-        padd_byte  = padding.to_bytes(1, 'big')
-        file_bytes = '0' * padding + total_bits
-        file_bytes = int(file_bytes, 2).to_bytes(len(file_bytes) // 8, 'big')
+        contents = pine.create_file_contents(self.write_table, encoded_file)
 
         with open(fname + '.pine', 'wb') as g:
-            # <4:write_table_size><1:tail_bytes><write_table_size:write_table><r:encoded_file>
-            g.write(len_pine_b + padd_byte + pine_bytes + file_bytes)
+            g.write(contents)
 
-        self.huff_tree = T
         return T
 
     def decode(self, encoded_fname: str) -> str:
+        """
+        Decode the .pine file given by its filename
+        """
+        # Pull the bytes from the file
         s = ''
-        write_table_bytes, encoded_file, padding = HuffmanCoding.pull_file_chunks(encoded_fname)
-        cn = mn = pine.bytes_as_tree(write_table_bytes)
+        write_table_bytes, encoded_file, padding = pine.get_file_chunks(encoded_fname)
+        cn = mn = pine.tree_from_bytes(write_table_bytes)
         for byte in encoded_file:
             for b in HuffmanCoding._byte_to_bits(byte, padding):
                 if b == '0':
@@ -93,31 +95,6 @@ class HuffmanCoding(object):
             padding = 0
         return s
 
-    def get_tail_padding(bits_str: str):
-        # pad the last digits to make bytes out of the leftover bits
-        len_bits = len(bits_str)
-        return 8 * (len_bits // 8 + 1) - len_bits
-
-    def pull_file_chunks(fname: str):
-        """
-        <size:name of chunk>
-        <r:*> -> rest of the bytes in the file belong to chunk *
-
-        <4:write_table_size>
-        <1:prepadding>
-        <write_table_size:write_table>
-        <prepadding:padding>
-        <r:encoded_file>
-        """
-        f = open(fname, 'rb')
-        tree_size = int.from_bytes(f.read(HuffmanCoding.TREE_MAGNITUDE), 'big')
-        padding = int.from_bytes(f.read(1), 'big')
-        tree = f.read(tree_size)
-        rest = f.read()
-        f.close()
-
-        return tree, rest, padding
-
 
 if __name__ == '__main__':
     hc = HuffmanCoding()
@@ -126,4 +103,3 @@ if __name__ == '__main__':
 
     print('\nReconstructed')
     print(reconstructed)
-
