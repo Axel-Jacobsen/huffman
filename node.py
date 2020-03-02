@@ -6,4 +6,4 @@ class Node(object):
 
     def __repr__(self):
         """ Newick Tree Format """
-        return f'({self.node_num}, ({self.l_child}, {self.r_child}))'
+        return f'({self.l_child}, {self.r_child})'
