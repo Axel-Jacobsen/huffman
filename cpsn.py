@@ -1,6 +1,10 @@
 #! /usr/bin/env python3
 
+
+import sys
+import time
 from collections import defaultdict
+
 import pine
 from node import Node
 
@@ -16,16 +20,19 @@ class HuffmanCoding(object):
             D[byte] += 1
         return sorted(D.items(), key=lambda v: v[1], reverse=True)
 
+    def _pop_last_two(char_freqs):
+        last_2 = char_freqs[-2:]
+        del char_freqs[-2:]
+        return last_2
+
     def _gen_huffman_tree(char_freqs):
         """
         Create the Huffman Tree which will be used for compression
         """
         while len(char_freqs) > 1:
-            last_2 = char_freqs[-2:]
-            del char_freqs[-2:]
-            branch = Node(last_2[0][0], last_2[1][0])
-            freq_sum = last_2[0][1] + last_2[1][1]
-            char_freqs.append((branch, freq_sum))
+            bot1, bot2 = HuffmanCoding._pop_last_two(char_freqs)
+            branch = Node(bot1[0], bot2[0])
+            char_freqs.append((branch, bot1[1] + bot2[1]))
             char_freqs.sort(key=lambda v: v[1], reverse=True)
         return char_freqs[0][0]
 
@@ -96,11 +103,25 @@ class HuffmanCoding(object):
 
 
 if __name__ == '__main__':
+    filename = 'murderoftheuniverse.txt'
+    if len(sys.argv) == 2:
+        filename = sys.argv[1]
+
+    t1 = time.time()
     hc = HuffmanCoding()
-    T = hc.encode('enwik8')
-    print('Uncompress file')
-    reconstructed = hc.decode('enwik8.pine')
-    original = open('enwik8', 'r').read()
+    T = hc.encode(filename)
+    t2 = time.time()
+
+    print('------------------')
+    print(f'Time to compress: {t2 - t1}\n')
+
+    print('Uncompressing file')
+    reconstructed = hc.decode(filename + '.pine')
+    original = open(filename, 'r').read()
+    print('------------------')
+    print(f'Time to decompress: {time.time() - t2}\n')
+
     assert reconstructed == original
-    print('Reconstructed:')
-    print(reconstructed)
+    print('Reconstructed equal to original')
+    # print(reconstructed)
+
