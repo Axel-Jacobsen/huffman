@@ -24,3 +24,8 @@ i.e. compressed file is 72 % of the size of the uncompressed file. The compressi
 
 The time to compress and decompress are both much too long (on my 2015 Macbook Pro, ~60s to compress enwik8, ~600s to decompress!). Look for optimizations in the decompress method first.
 
+## Improvements
+
+- The write table is not being compressed as much as it should be. It is currently saving the zeros and ones in the write table as their utf-8 codes (e.g. 0x30, 0x31) instead of as bytes of zeros and ones.
+- Decompression is much slower than compression; most likely because we have to go through the compressed file bit by bit to find characters in the tree. Must think of ways to get around this.
+

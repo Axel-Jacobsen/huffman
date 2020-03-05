@@ -11,6 +11,8 @@ from node import Node
 
 class HuffmanCoding(object):
 
+    TREE_MAGNITUDE = 2
+
     def __init__(self):
         self.write_table = {}
 
@@ -50,14 +52,6 @@ class HuffmanCoding(object):
         except AttributeError:
             self.write_table[node.r_child] = b + '1'
 
-    def _byte_to_bits(byte, discard=0):
-        """
-        yield bit by bit from byte, ignoring the first `discard` bits
-        `discard` is used to ignore the zero padding before the encoded file
-        """
-        for i in range(discard, 8):
-            yield str((byte >> (7 - i)) & 1)
-
     def encode(self, fname):
         print('Getting Char Frequency')
         with open(fname, 'r') as read_file:
@@ -75,12 +69,28 @@ class HuffmanCoding(object):
         for char in f:
             encoded_data += self.write_table[char]
 
-        contents = pine.create_file_contents(self.write_table, encoded_data)
+        HuffmanCoding.write_to_file(self.write_table, encoded_data, fname)
+
+        return T
+
+    def write_to_file(write_table, encoded_data, fname):
+        """
+        this function does the grunt work of getting the
+        write table and encoded data ready and writing it
+        to a file
+        """
+        pine_bytes = pine.bytes_from_write_table(write_table)
+        len_pine_bytes = len(pine_bytes).to_bytes(HuffmanCoding.TREE_MAGNITUDE, 'big')
+        padding = pine.get_padding_size(len(encoded_data))
+        padding_byte = padding.to_bytes(1, 'big')
+        file_bytes = '0' * padding + encoded_data
+        file_bytes = int(file_bytes, 2).to_bytes(len(file_bytes) // 8, 'big')
+
+        contents =  len_pine_bytes + padding_byte + pine_bytes + file_bytes
 
         with open(fname + '.pine', 'wb') as g:
             g.write(contents)
 
-        return T
 
     def decode(self, encoded_fname: str) -> str:
         """
@@ -90,7 +100,7 @@ class HuffmanCoding(object):
         write_table_bytes, encoded_data, padding = pine.get_file_chunks(encoded_fname)
         cn = mn = pine.tree_from_bytes(write_table_bytes)
         for byte in encoded_data:
-            for b in HuffmanCoding._byte_to_bits(byte, padding):
+            for b in pine.byte_to_bits(byte, padding):
                 if b == '0':
                     cn = cn.l_child
                 elif b == '1':
@@ -103,7 +113,7 @@ class HuffmanCoding(object):
 
 
 if __name__ == '__main__':
-    filename = 'murderoftheuniverse.txt'
+    filename = 'README.md'
     if len(sys.argv) == 2:
         filename = sys.argv[1]
 
@@ -111,6 +121,7 @@ if __name__ == '__main__':
     hc = HuffmanCoding()
     T = hc.encode(filename)
     t2 = time.time()
+    print(hc.write_table)
 
     print('------------------')
     print(f'Time to compress: {t2 - t1}\n')
@@ -121,12 +132,7 @@ if __name__ == '__main__':
     print('------------------')
     print(f'Time to decompress: {time.time() - t2}\n')
 
-    try:
-        assert reconstructed == original
-    except AssertionError:
-        print("DECOMPRESSION ERROR")
-        print(reconstructed)
-        print(original)
+    assert reconstructed == original
     print('Reconstructed equal to original')
     # print(reconstructed)
 
