@@ -90,6 +90,17 @@ def write_table_from_bytes(write_table_bytes):
         write_table[code_char_str[-1]] = code_char_str[:-1]
     return write_table
 
+def inverted_write_table_from_bytes(write_table_bytes):
+    """
+    build and return the inverted write table from a chunk of bytes
+    representing a write table
+    """
+    write_table = {}
+    write_arr = write_table_bytes.split(bytes([0xff]))[:-1]
+    for v in write_arr:
+        code_char_str = v.decode('utf-8')
+        write_table[code_char_str[:-1]] = code_char_str[-1]
+    return write_table
 
 def _add_char_code(tree, char, code):
     """
@@ -129,3 +140,4 @@ def get_padding_size(bits_str: str):
     """
     len_bits = len(bits_str)
     return 8 * (len_bits // 8 + 1) - len_bits
+

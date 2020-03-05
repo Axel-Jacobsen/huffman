@@ -121,7 +121,12 @@ if __name__ == '__main__':
     print('------------------')
     print(f'Time to decompress: {time.time() - t2}\n')
 
-    assert reconstructed == original
+    try:
+        assert reconstructed == original
+    except AssertionError:
+        print("DECOMPRESSION ERROR")
+        print(reconstructed)
+        print(original)
     print('Reconstructed equal to original')
     # print(reconstructed)
 
