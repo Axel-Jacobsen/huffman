@@ -9,7 +9,7 @@ This file provides the framework to write and read to .pine
 files. Using notation <number of bytes:name of block>, the
 .pine file consists of the following structure:
 
-    <2:write_table_size>
+    <TREE_MAGNITUDE:write_table_size>
     <1:prepadding_size>
     <write_table_size:write_table>
     <prepadding_size:padding>
@@ -19,6 +19,14 @@ where `r` denotes the 'rest' of the file
 """
 
 TREE_MAGNITUDE = 2
+
+
+def read_in_chunks(f, chunk_size=1024):
+    while True:
+        data = f.read(chunk_size)
+        if not data:
+            break
+        yield data
 
 
 def get_file_chunks(fname: str, tree_magnitude=TREE_MAGNITUDE):
@@ -44,7 +52,6 @@ def tree_from_bytes(write_table_bytes):
     write_table = write_table_from_bytes(write_table_bytes)
     T = Node()
     for char, code in write_table.items():
-        print(char, code)
         _add_char_code(T, char, code)
     return T
 
@@ -57,7 +64,7 @@ def bytes_from_write_table(write_table):
     byte_arr = bytes()
     for char, code in write_table.items():
         code_padding_len = get_padding_size(len(code))
-        code = '0' * code_padding_len + code 
+        code = '0' * code_padding_len + code
         byte_arr += code_padding_len.to_bytes(1, 'big')
         byte_arr += int(code, 2).to_bytes(len(code) // 8, 'big')
         byte_arr += bytes(char, 'utf-8')
@@ -74,12 +81,12 @@ def write_table_from_bytes(write_table_bytes):
     write_table = {}
     write_arr = write_table_bytes.split(bytes([0xff]))[:-1]
     for v in write_arr:
-        padding = v[0]
-        code = int.from_bytes(v[1:-1], 'big')
-        code = byte_to_str(code, padding)
-        char = chr(v[-1])
+        padding = v[0]  # byte 0 is padding size
+        code = bytes_to_str(v[1:-1], padding)  # middle bytes is the code
+        char = chr(v[-1])  # last byte is the char
         write_table[char] = code
     return write_table
+
 
 def _add_char_code(tree, char, code):
     """
@@ -101,8 +108,6 @@ def _add_char_code(tree, char, code):
                 cnode = cnode.r_child
             else:
                 cnode = cnode.r_child
-        else:
-            raise AssertionError(f'invalid code in .pine file: {code}, {v}')
 
     # set the parent's child with `char` as desired
     if code[-1] == '0':
@@ -117,7 +122,7 @@ def get_padding_size(bits_str_len):
     is divisible by 8 - i.e. bits_str represents individual bits,
     which we want to convert to bytes (which we can't do if bits_str % 8 != 0)
     """
-    return 8 * (bits_str_len // 8 + 1) - bits_str_len
+    return (8 - bits_str_len % 8) % 8
 
 
 def byte_to_bits(byte, discard=0):
@@ -128,14 +133,16 @@ def byte_to_bits(byte, discard=0):
     for i in range(discard, 8):
         yield str((byte >> (7 - i)) & 1)
 
-def byte_to_str(byte, discard=0):
+
+def bytes_to_str(code_bytes, discard=0):
     """
     turns byte into a string of bits
     byte_to_str(0xff) == '11111111'
     byte_to_str(0x09) == '00001001'
     """
     s = ''
-    for b in byte_to_bits(byte, discard):
-        s += b
+    for byte in code_bytes:
+        for b in byte_to_bits(byte, discard):
+            s += b
+            discard = 0
     return s
-

@@ -3,7 +3,7 @@
 
 import sys
 import time
-from collections import defaultdict
+from collections import Counter
 
 import pine
 from node import Node
@@ -16,10 +16,10 @@ class HuffmanCoding(object):
     def __init__(self):
         self.write_table = {}
 
-    def _create_char_freqs(bts):
-        D = defaultdict(int)
-        for byte in bts:
-            D[byte] += 1
+    def _create_char_freqs(f):
+        D = Counter()
+        for chunk in pine.read_in_chunks(f):
+            D += Counter(chunk)
         return sorted(D.items(), key=lambda v: v[1], reverse=True)
 
     def _pop_last_two(char_freqs):
@@ -54,9 +54,8 @@ class HuffmanCoding(object):
 
     def encode(self, fname):
         print('Getting Char Frequency')
-        with open(fname, 'r') as read_file:
-            f = read_file.read()
-            char_freqs = HuffmanCoding._create_char_freqs(f)
+        read_file = open(fname, 'r')
+        char_freqs = HuffmanCoding._create_char_freqs(read_file)
 
         print('Generating Huffman Tree')
         T = HuffmanCoding._gen_huffman_tree(char_freqs)
@@ -66,9 +65,12 @@ class HuffmanCoding(object):
 
         print('Writing byte file')
         encoded_data = ''
-        for char in f:
-            encoded_data += self.write_table[char]
+        read_file.seek(0)
+        for chunk in pine.read_in_chunks(read_file):
+            for char in chunk:
+                encoded_data += self.write_table[char]
 
+        read_file.close()
         HuffmanCoding.write_to_file(self.write_table, encoded_data, fname)
 
         return T
@@ -80,17 +82,17 @@ class HuffmanCoding(object):
         to a file
         """
         pine_bytes = pine.bytes_from_write_table(write_table)
-        len_pine_bytes = len(pine_bytes).to_bytes(HuffmanCoding.TREE_MAGNITUDE, 'big')
+        len_pine_bytes = len(pine_bytes).to_bytes(
+            HuffmanCoding.TREE_MAGNITUDE, 'big')
         padding = pine.get_padding_size(len(encoded_data))
         padding_byte = padding.to_bytes(1, 'big')
         file_bytes = '0' * padding + encoded_data
         file_bytes = int(file_bytes, 2).to_bytes(len(file_bytes) // 8, 'big')
 
-        contents =  len_pine_bytes + padding_byte + pine_bytes + file_bytes
+        contents = len_pine_bytes + padding_byte + pine_bytes + file_bytes
 
         with open(fname + '.pine', 'wb') as g:
             g.write(contents)
-
 
     def decode(self, encoded_fname: str) -> str:
         """
@@ -121,7 +123,6 @@ if __name__ == '__main__':
     hc = HuffmanCoding()
     T = hc.encode(filename)
     t2 = time.time()
-    print(hc.write_table)
 
     print('------------------')
     print(f'Time to compress: {t2 - t1}\n')
@@ -134,5 +135,3 @@ if __name__ == '__main__':
 
     assert reconstructed == original
     print('Reconstructed equal to original')
-    # print(reconstructed)
-
