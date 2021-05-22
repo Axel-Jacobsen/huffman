@@ -8,3 +8,5 @@ enwik8*
 __pycache__/
 
 debugging_tree
+
+.ipynb_checkpoints

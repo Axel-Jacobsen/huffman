@@ -1,8 +1,12 @@
 #! /usr/bin/env python3
 
+from __future__ import annotations
+
 import sys
 import time
+
 from collections import Counter
+from typing import List, Tuple, Dict, Any, TextIO, Union
 
 import pine
 from node import Node
@@ -10,34 +14,45 @@ from node import Node
 
 class HuffmanCoding(object):
 
-    TREE_MAGNITUDE = 2
+    HuffmanTree = dict
 
     def __init__(self):
         self.write_table = {}
 
-    def _create_char_freqs(f):
-        D = Counter()
+    @staticmethod
+    def _create_char_freqs(f: TextIO) -> List[Tuple[str, int]]:
+        """Returns list of tuples from "char" to it's count
+        """
+        D: Counter = Counter()
         for chunk in pine.read_in_chunks(f):
             D += Counter(chunk)
-        return sorted(D.items(), key=lambda v: v[1], reverse=True)
+        return list(D.items())
 
-    def _pop_last_two(char_freqs):
-        last_2 = char_freqs[-2:]
-        del char_freqs[-2:]
-        return last_2
+    # @staticmethod
+    # def _pop_last_two(char_freqs: List[Any]) -> Tuple[Any, ...]:
+    #     """Returns tuple of last two items from "char" to it's count
+    #     """
+    #     last_2 = tuple(char_freqs[-2:])
+    #     del char_freqs[-2:]
+    #     return last_2
 
-    def _gen_huffman_tree(char_freqs):
+    @staticmethod
+    def _gen_huffman_tree(char_freqs: List[Tuple[Union[str, Node], int]]) -> Node:
         """
         Create the Huffman Tree which will be used for compression
+
+        this could be done better
         """
         while len(char_freqs) > 1:
-            bot1, bot2 = HuffmanCoding._pop_last_two(char_freqs)
+            char_freqs.sort(key=lambda v: v[1], reverse=True)
+            *char_freqs, bot1, bot2 = char_freqs
             branch = Node(bot1[0], bot2[0])
             char_freqs.append((branch, bot1[1] + bot2[1]))
-            char_freqs.sort(key=lambda v: v[1], reverse=True)
-        return char_freqs[0][0]
+        peak_node, _ = char_freqs[0]
+        assert isinstance(peak_node, Node)
+        return peak_node
 
-    def gen_write_table(self, node, b=""):
+    def gen_write_table(self, node: Node, b: str = ""):
         """
         Generate write table (which maps the character to its code
         in the Huffman Tree)
@@ -51,18 +66,12 @@ class HuffmanCoding(object):
         except AttributeError:
             self.write_table[node.r_child] = b + "1"
 
-    def encode(self, fname):
-        print("Getting Char Frequency")
+    def encode(self, fname: str):
         read_file = open(fname, "r")
         char_freqs = HuffmanCoding._create_char_freqs(read_file)
-
-        print("Generating Huffman Tree")
         T = HuffmanCoding._gen_huffman_tree(char_freqs)
-
-        print("Generating Writing Table")
         self.gen_write_table(T)
 
-        print("Writing byte file")
         encoded_data = ""
         read_file.seek(0)
         for chunk in pine.read_in_chunks(read_file):
@@ -70,24 +79,25 @@ class HuffmanCoding(object):
                 encoded_data += self.write_table[char]
 
         read_file.close()
-        HuffmanCoding.write_to_file(self.write_table, encoded_data, fname)
+        self.write_to_file(self.write_table, encoded_data, fname)
 
-        return T
-
-    def write_to_file(write_table, encoded_data, fname):
+    def write_to_file(self, write_table, encoded_data: str, fname: str):
         """
         this function does the grunt work of getting the
         write table and encoded data ready and writing it
         to a file
         """
         pine_bytes = pine.bytes_from_write_table(write_table)
-        len_pine_bytes = len(pine_bytes).to_bytes(HuffmanCoding.TREE_MAGNITUDE, "big")
+        len_pine_bytes = len(pine_bytes).to_bytes(pine.TREE_MAGNITUDE, "big")
         padding = pine.get_padding_size(len(encoded_data))
         padding_byte = padding.to_bytes(1, "big")
-        file_bytes = "0" * padding + encoded_data
-        file_bytes = int(file_bytes, 2).to_bytes(len(file_bytes) // 8, "big")
+        data_as_str = "0" * padding + encoded_data
+        assert len(data_as_str) % 8 == 0
 
-        contents = len_pine_bytes + padding_byte + pine_bytes + file_bytes
+        # since file_bytes
+        data_as_bytes = int(data_as_str, 2).to_bytes(len(data_as_str) // 8, "big")
+
+        contents = len_pine_bytes + padding_byte + pine_bytes + data_as_bytes
 
         with open(fname + ".pine", "wb") as g:
             g.write(contents)
@@ -113,31 +123,35 @@ class HuffmanCoding(object):
 
 
 if __name__ == "__main__":
-    filename = "enwik8"
     if len(sys.argv) == 2:
         filename = sys.argv[1]
+    else:
+        print("Usage: cpsn.py <filename>")
+        exit()
 
-    t1 = time.time()
     hc = HuffmanCoding()
-    T = hc.encode(filename)
-    t2 = time.time()
 
-    bts = pine.bytes_from_write_table(hc.write_table)
-    wtb = pine.write_table_from_bytes(bts)
-    orig = wtb.items()
-    reco = hc.write_table
+    # the actual compression
+    print(f"compressing {filename}")
+    t1 = time.perf_counter()
+    hc.encode(filename)
+    t2 = time.perf_counter()
+    print("Num chars", len(hc.write_table.keys()))
 
-    print("write table reconstruction successful:", set(orig) - set(reco))
-    print("orig", len(orig), "reco", len(reco))
+    # Some verification
+    # assert (
+    #     wtb == hc.write_table
+    # ), f"""original write table is not equal to reconstructed write table
+# {len(wtb)}, {len(hc.write_table)} {len(set(hc.write_table.keys()) - set(wtb.keys()))}"""
+    # \n{wtb}\n{reco}
 
-    print("------------------")
-    print(f"Time to compress: {t2 - t1}\n")
+    print(f"time to compress: {t2 - t1:.4f}\n")
 
-    print("Uncompressing file")
+    # decompression
+    print("decompressing file")
     reconstructed = hc.decode(filename + ".pine")
     original = open(filename, "r").read()
-    print("------------------")
-    print(f"Time to decompress: {time.time() - t2}\n")
+    print(f"time to decompress: {time.perf_counter() - t2:.4f}\n")
 
-    assert reconstructed == original
-    print("Reconstructed equal to original")
+    assert reconstructed == original, ""
+    print("reconstructed equal to orinal")
