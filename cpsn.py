@@ -1,6 +1,5 @@
 #! /usr/bin/env python3
 
-
 import sys
 import time
 from collections import Counter
@@ -38,33 +37,33 @@ class HuffmanCoding(object):
             char_freqs.sort(key=lambda v: v[1], reverse=True)
         return char_freqs[0][0]
 
-    def gen_write_table(self, node, b=''):
+    def gen_write_table(self, node, b=""):
         """
         Generate write table (which maps the character to its code
         in the Huffman Tree)
         """
         try:
-            self.gen_write_table(node.l_child, b + '0')
+            self.gen_write_table(node.l_child, b + "0")
         except AttributeError:
-            self.write_table[node.l_child] = b + '0'
+            self.write_table[node.l_child] = b + "0"
         try:
-            self.gen_write_table(node.r_child, b + '1')
+            self.gen_write_table(node.r_child, b + "1")
         except AttributeError:
-            self.write_table[node.r_child] = b + '1'
+            self.write_table[node.r_child] = b + "1"
 
     def encode(self, fname):
-        print('Getting Char Frequency')
-        read_file = open(fname, 'r')
+        print("Getting Char Frequency")
+        read_file = open(fname, "r")
         char_freqs = HuffmanCoding._create_char_freqs(read_file)
 
-        print('Generating Huffman Tree')
+        print("Generating Huffman Tree")
         T = HuffmanCoding._gen_huffman_tree(char_freqs)
 
-        print('Generating Writing Table')
+        print("Generating Writing Table")
         self.gen_write_table(T)
 
-        print('Writing byte file')
-        encoded_data = ''
+        print("Writing byte file")
+        encoded_data = ""
         read_file.seek(0)
         for chunk in pine.read_in_chunks(read_file):
             for char in chunk:
@@ -82,30 +81,29 @@ class HuffmanCoding(object):
         to a file
         """
         pine_bytes = pine.bytes_from_write_table(write_table)
-        len_pine_bytes = len(pine_bytes).to_bytes(
-            HuffmanCoding.TREE_MAGNITUDE, 'big')
+        len_pine_bytes = len(pine_bytes).to_bytes(HuffmanCoding.TREE_MAGNITUDE, "big")
         padding = pine.get_padding_size(len(encoded_data))
-        padding_byte = padding.to_bytes(1, 'big')
-        file_bytes = '0' * padding + encoded_data
-        file_bytes = int(file_bytes, 2).to_bytes(len(file_bytes) // 8, 'big')
+        padding_byte = padding.to_bytes(1, "big")
+        file_bytes = "0" * padding + encoded_data
+        file_bytes = int(file_bytes, 2).to_bytes(len(file_bytes) // 8, "big")
 
         contents = len_pine_bytes + padding_byte + pine_bytes + file_bytes
 
-        with open(fname + '.pine', 'wb') as g:
+        with open(fname + ".pine", "wb") as g:
             g.write(contents)
 
     def decode(self, encoded_fname: str) -> str:
         """
         Decode the .pine file given by its filename
         """
-        s = ''
+        s = ""
         write_table_bytes, encoded_data, padding = pine.get_file_chunks(encoded_fname)
         cn = mn = pine.tree_from_bytes(write_table_bytes)
         for byte in encoded_data:
             for b in pine.byte_to_bits(byte, padding):
-                if b == '0':
+                if b == "0":
                     cn = cn.l_child
-                elif b == '1':
+                elif b == "1":
                     cn = cn.r_child
                 if isinstance(cn, str):
                     s += cn
@@ -114,8 +112,8 @@ class HuffmanCoding(object):
         return s
 
 
-if __name__ == '__main__':
-    filename = 'README.md'
+if __name__ == "__main__":
+    filename = "enwik8"
     if len(sys.argv) == 2:
         filename = sys.argv[1]
 
@@ -124,14 +122,22 @@ if __name__ == '__main__':
     T = hc.encode(filename)
     t2 = time.time()
 
-    print('------------------')
-    print(f'Time to compress: {t2 - t1}\n')
+    bts = pine.bytes_from_write_table(hc.write_table)
+    wtb = pine.write_table_from_bytes(bts)
+    orig = wtb.items()
+    reco = hc.write_table
 
-    print('Uncompressing file')
-    reconstructed = hc.decode(filename + '.pine')
-    original = open(filename, 'r').read()
-    print('------------------')
-    print(f'Time to decompress: {time.time() - t2}\n')
+    print("write table reconstruction successful:", set(orig) - set(reco))
+    print("orig", len(orig), "reco", len(reco))
+
+    print("------------------")
+    print(f"Time to compress: {t2 - t1}\n")
+
+    print("Uncompressing file")
+    reconstructed = hc.decode(filename + ".pine")
+    original = open(filename, "r").read()
+    print("------------------")
+    print(f"Time to decompress: {time.time() - t2}\n")
 
     assert reconstructed == original
-    print('Reconstructed equal to original')
+    print("Reconstructed equal to original")

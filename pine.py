@@ -34,9 +34,9 @@ def get_file_chunks(fname: str, tree_magnitude=TREE_MAGNITUDE):
     following the file description above, this function pulls
     chunks of bytes from `fname` and returns them
     """
-    f = open(fname, 'rb')
-    tree_size = int.from_bytes(f.read(tree_magnitude), 'big')
-    padding = int.from_bytes(f.read(1), 'big')
+    f = open(fname, "rb")
+    tree_size = int.from_bytes(f.read(tree_magnitude), "big")
+    padding = int.from_bytes(f.read(1), "big")
     tree = f.read(tree_size)
     rest = f.read()
     f.close()
@@ -64,11 +64,11 @@ def bytes_from_write_table(write_table):
     byte_arr = bytes()
     for char, code in write_table.items():
         code_padding_len = get_padding_size(len(code))
-        code = '0' * code_padding_len + code
-        byte_arr += code_padding_len.to_bytes(1, 'big')
-        byte_arr += int(code, 2).to_bytes(len(code) // 8, 'big')
-        byte_arr += bytes(char, 'utf-8')
-        byte_arr += bytes([0xff])
+        code = "0" * code_padding_len + code
+        byte_arr += code_padding_len.to_bytes(1, "big")
+        byte_arr += int(code, 2).to_bytes(len(code) // 8, "big")
+        byte_arr += bytes(char, "utf-8")
+        byte_arr += bytes([0xFF])
     return byte_arr
 
 
@@ -79,7 +79,7 @@ def write_table_from_bytes(write_table_bytes):
     the inverse of bytes_from_write_table
     """
     write_table = {}
-    write_arr = write_table_bytes.split(bytes([0xff]))[:-1]
+    write_arr = write_table_bytes.split(bytes([0xFF]))[:-1]
     for v in write_arr:
         padding = v[0]  # byte 0 is padding size
         code = bytes_to_str(v[1:-1], padding)  # middle bytes is the code
@@ -96,13 +96,13 @@ def _add_char_code(tree, char, code):
     # Find the parent that will hold `char`
     cnode = tree
     for v in code[:-1]:
-        if v == '0':
+        if v == "0":
             if cnode.l_child is None:
                 cnode.l_child = Node()
                 cnode = cnode.l_child
             else:
                 cnode = cnode.l_child
-        elif v == '1':
+        elif v == "1":
             if cnode.r_child is None:
                 cnode.r_child = Node()
                 cnode = cnode.r_child
@@ -110,7 +110,7 @@ def _add_char_code(tree, char, code):
                 cnode = cnode.r_child
 
     # set the parent's child with `char` as desired
-    if code[-1] == '0':
+    if code[-1] == "0":
         cnode.l_child = char
     else:
         cnode.r_child = char
@@ -140,7 +140,7 @@ def bytes_to_str(code_bytes, discard=0):
     byte_to_str(0xff) == '11111111'
     byte_to_str(0x09) == '00001001'
     """
-    s = ''
+    s = ""
     for byte in code_bytes:
         for b in byte_to_bits(byte, discard):
             s += b
