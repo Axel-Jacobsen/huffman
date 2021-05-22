@@ -1,4 +1,8 @@
 out
+
 *.pine
 enwik8*
+
 .DS_Store
+
+__pycache__/
