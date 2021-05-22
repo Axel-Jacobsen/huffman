@@ -1,9 +1,12 @@
 out
+
 *.pine
 enwik8*
-.DS_Store
 
-__pycache__/node.cpython-37 2.pyc
-__pycache__/node.cpython-37.pyc
-__pycache__/pine.cpython-37 2.pyc
-__pycache__/pine.cpython-37.pyc
+.DS_Store
+.ipynb_checkpoints
+
+__pycache__/
+
+debugging_tree
+
