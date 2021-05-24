@@ -106,29 +106,19 @@ def _add_char_code(tree: Node, char: str, code: str):
             if cnode.l_child is None:
                 cnode.l_child = Node()
                 cnode = cnode.l_child
-            elif isinstance(cnode.l_child, str):
-                raise RuntimeError(f"traverse node left child {cnode} is string, when it should be either None or another Node\n\tchar: {char}\tcode: {code} ")
             else:
                 cnode = cnode.l_child
         elif v == "1":
             if cnode.r_child is None:
                 cnode.r_child = Node()
                 cnode = cnode.r_child
-            elif isinstance(cnode.r_child, str):
-                raise RuntimeError(f"traverse node reft child {cnode} is string, when it should be either None or another Node\n\tchar: {char}\tcode: {code} ")
             else:
-                assert isinstance(cnode, Node)
                 cnode = cnode.r_child
-        else:
-            raise RuntimeError("Only 0s and 1s should be in the code. Something is seriously wrong!")
 
     # set the parent's child with `char` as desired
-    assert isinstance(cnode, Node)
     if insert_position == "0":
-        assert cnode.l_child is None
         cnode.l_child = char
     else:
-        assert cnode.r_child is None
         cnode.r_child = char
 
 
