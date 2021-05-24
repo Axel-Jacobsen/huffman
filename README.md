@@ -12,7 +12,7 @@ Compression Ratio: (uncompresed size) / (compressed size) = 1.39
 
 i.e. compressed file is 72% of the size of the uncompressed file. The compression ratio would depend on the number of unique characters in the uncompressed file; the fewer characters, the higher the compression ratio.
 
-Note: this only works on ASCII files - i.e., each character is 1 byte. Also, the time to compress and decompress are both much too long (on my 2015 Macbook Pro, ~60s to compress enwik8, ~600s to decompress!). Look for optimizations in the decompress method first.
+Note: this only works on ASCII files - i.e., each character is 1 byte. The overall structure could be improved if reading in the original data is seperated from the rest of the content - that way, supporting arbitrary file types will be easier. Also, this is very slow.
 
 ## .pine file description
 

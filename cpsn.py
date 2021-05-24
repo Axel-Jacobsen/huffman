@@ -28,20 +28,12 @@ class HuffmanCoding(object):
             D += Counter(chunk)
         return list(D.items())
 
-    # @staticmethod
-    # def _pop_last_two(char_freqs: List[Any]) -> Tuple[Any, ...]:
-    #     """Returns tuple of last two items from "char" to it's count
-    #     """
-    #     last_2 = tuple(char_freqs[-2:])
-    #     del char_freqs[-2:]
-    #     return last_2
-
     @staticmethod
     def _gen_huffman_tree(char_freqs: List[Tuple[Union[str, Node], int]]) -> Node:
         """
         Create the Huffman Tree which will be used for compression
 
-        this could be done better
+        this could be done better (we are mixing a list of tuples of types (str, int) and (node, int))
         """
         while len(char_freqs) > 1:
             char_freqs.sort(key=lambda v: v[1], reverse=True)
