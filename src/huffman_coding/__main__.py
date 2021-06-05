@@ -31,10 +31,10 @@ def main():
             out_file = args.output
         else:
             out_file = args.file.replace(".pine", "")
-        decoded = H.decode(in_file, out_file=out_file)
+        decoded = H.decode(args.file, out_file=out_file)
     else:
         if args.output:
             out_file = args.output
         else:
             out_file = args.file + ".pine"
-        H.encode(in_file, out_file=out_file)
+        H.encode(args.file, out_file=out_file)
