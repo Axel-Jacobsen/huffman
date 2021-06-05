@@ -6,10 +6,10 @@ import sys
 import time
 
 from collections import Counter
-from typing import List, Tuple, Dict, Any, TextIO, Union
+from typing import List, Tuple, Dict, Any, TextIO, Union, Optional
 
-import pine
-from node import Node
+import huffman_coding.pine as pine
+from huffman_coding.node import Node
 
 
 class HuffmanCoding(object):
@@ -21,8 +21,7 @@ class HuffmanCoding(object):
 
     @staticmethod
     def _create_char_freqs(f: TextIO) -> List[Tuple[str, int]]:
-        """Returns list of tuples from "char" to it's count
-        """
+        """Returns list of tuples from "char" to it's count"""
         D: Counter = Counter()
         for chunk in pine.read_in_chunks(f):
             D += Counter(chunk)
@@ -58,21 +57,6 @@ class HuffmanCoding(object):
         except AttributeError:
             self.write_table[node.r_child] = b + "1"
 
-    def encode(self, fname: str):
-        read_file = open(fname, "r")
-        char_freqs = HuffmanCoding._create_char_freqs(read_file)
-        T = HuffmanCoding._gen_huffman_tree(char_freqs)
-        self.gen_write_table(T)
-
-        encoded_data = ""
-        read_file.seek(0)
-        for chunk in pine.read_in_chunks(read_file):
-            for char in chunk:
-                encoded_data += self.write_table[char]
-
-        read_file.close()
-        self.write_to_file(self.write_table, encoded_data, fname)
-
     def write_to_file(self, write_table, encoded_data: str, fname: str):
         """
         this function does the grunt work of getting the
@@ -94,7 +78,22 @@ class HuffmanCoding(object):
         with open(fname + ".pine", "wb") as g:
             g.write(contents)
 
-    def decode(self, encoded_fname: str) -> str:
+    def encode(self, fname: str, out_file: str = None):
+        read_file = open(fname, "r")
+        char_freqs = HuffmanCoding._create_char_freqs(read_file)
+        T = HuffmanCoding._gen_huffman_tree(char_freqs)
+        self.gen_write_table(T)
+
+        encoded_data = ""
+        read_file.seek(0)
+        for chunk in pine.read_in_chunks(read_file):
+            for char in chunk:
+                encoded_data += self.write_table[char]
+
+        read_file.close()
+        self.write_to_file(self.write_table, encoded_data, fname)
+
+    def decode(self, encoded_fname: str, out_file: str = None) -> str:
         """
         Decode the .pine file given by its filename
         """
@@ -111,6 +110,11 @@ class HuffmanCoding(object):
                     s += cn
                     cn = mn
             padding = 0
+
+        if out_file is not None:
+            with open(out_file, "w") as f:
+                f.write(s)
+
         return s
 
 
@@ -129,13 +133,6 @@ if __name__ == "__main__":
     hc.encode(filename)
     t2 = time.perf_counter()
     print("Num chars", len(hc.write_table.keys()))
-
-    # Some verification
-    # assert (
-    #     wtb == hc.write_table
-    # ), f"""original write table is not equal to reconstructed write table
-# {len(wtb)}, {len(hc.write_table)} {len(set(hc.write_table.keys()) - set(wtb.keys()))}"""
-    # \n{wtb}\n{reco}
 
     print(f"time to compress: {t2 - t1:.4f}\n")
 

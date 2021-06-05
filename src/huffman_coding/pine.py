@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-from node import Node
+from huffman_coding.node import Node
 
 from typing import Generator, Tuple, TextIO, Dict
 
