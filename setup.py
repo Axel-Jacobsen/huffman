@@ -7,7 +7,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="huffman_coding",
-    version="0.1",
+    version="1",
     package_dir={"": "src"},
     packages=find_packages("src"),
     description="very basic huffman coding",
