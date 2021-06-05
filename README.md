@@ -2,7 +2,21 @@
 
 Implementation of [Huffman Coding](https://en.wikipedia.org/wiki/Huffman_coding).
 
-Tested on the lyrics of [Murder of the Universe](https://www.youtube.com/watch?v=4zUPTPlkqDg) by King Gizzard and the Wizard Lizard.
+```sh
+$ hc -h
+
+usage: Huffman Coding [-h] [-d] [-o OUTPUT] file
+
+positional arguments:
+  file                  file to compress or decompress
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d, --decompress      decompress file
+  -o OUTPUT, --output OUTPUT
+                        filename for output - defaults to adding/removing .pine
+```
+
 
 ```txt
 Uncompressed File Size (murderoftheuniverse.txt): 2.5K
