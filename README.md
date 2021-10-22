@@ -2,6 +2,10 @@
 
 Implementation of [Huffman Coding](https://en.wikipedia.org/wiki/Huffman_coding).
 
+## UPDATE
+
+[I wrote this in C](https://github.com/Axel-Jacobsen/chuffman), which runs faster, and is written more cleanly. I am more proud of that project. Consider this a rough prototype.
+
 ```sh
 $ hc -h
 
